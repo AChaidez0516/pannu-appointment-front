@@ -1,0 +1,97 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+orbs:
+  slack: circleci/slack@4.4.4
+  
+commands:
+  notify_slack_error:
+    steps:
+      - slack/notify:
+          event: fail
+          custom: |
+            {
+              "text": "CircleCI job failed!",              
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Job Failed. :rolling_on_the_floor_laughing:",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Job*: ${CIRCLE_JOB}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Project*: $CIRCLE_PROJECT_REPONAME"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch*: $CIRCLE_BRANCH"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Job"
+                      },
+                      "url": "${CIRCLE_BUILD_URL}"
+                    }
+                  ]
+                }
+              ]
+            }
+  notify_slack_pass:
+    steps:
+      - slack/notify:
+          event: pass
+          template: basic_success_1
+
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+jobs:
+  frontends-deploy:
+    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+    working_directory: ~/repo
+    machine:
+      image: ubuntu-2004:202008-01
+    steps:
+      - run:
+          name: Deploy master to prod
+          command: |
+            ssh $SSH_USER@$SSH_HOST \<< EOF
+            cd /home/ubuntu/frontend-appointment-app
+            ./deploy.sh
+            EOF
+          no_output_timeout: 60m
+      
+      - notify_slack_error
+      - notify_slack_pass
+
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  deploy-workflow:
+    jobs:
+      - frontends-deploy:
+          filters:
+            branches:
+              only: main

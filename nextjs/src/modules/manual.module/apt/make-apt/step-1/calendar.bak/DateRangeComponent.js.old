@@ -1,0 +1,163 @@
+import { useEffect, useState } from "react";
+import styled from "styled-components";
+import Image from "next/image";
+
+import * as moment from "moment/moment";
+import 'moment/locale/en-gb';
+
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DesktopDatePicker } from "@mui/x-date-pickers";
+import TextField from "@mui/material/TextField";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import enLocale from "date-fns/locale/en-GB";
+
+import { ICONS } from '../../../../../../common/utils/styleGuide'
+import useJumpDate from "./context";
+import {
+  CustomAdapter,
+  DateIcon,
+  LeftArrowButtonBlue,
+  renderWeekPickerDay,
+  RightArrowButtonBlue
+} from "../../shared/utils";
+
+
+export default function DateRangeComponent(props) {
+
+  const {
+    selectedDateToFetchSlots,
+    setSelectedDateToFetchSlots,
+  } = props
+
+  const [today, setToday] = useState(new Date)
+
+  const from_date = moment(today).startOf('week');
+  const _today = moment(today)
+  const to_date = _today.endOf('week');
+
+  const { jumpDate, updateJumpDate, firstDate } = useJumpDate();
+
+  useEffect(() => {
+    if (firstDate) {
+      setToday(firstDate)
+    }
+  }, [firstDate])
+
+  return (
+    <DateRangeTitleWrapper>
+      <div className="date-range">
+        <Image
+          src={ICONS.arrowLeft}
+          width={8} height={12}
+        />
+        <div className="date-range-info">
+          <div className="date-unit">
+            {from_date.format('MMM')} {from_date.format('DD')}, {from_date.format('YYYY')}</div>
+          <div>-</div>
+          <div className="date-unit">{to_date.format('MMM')} {to_date.format('DD')}, {to_date.format('YYYY')}</div>
+        </div>
+        <Image
+          src={ICONS.arrowRight}
+          width={8} height={12}
+        />
+      </div>
+      <div className="calendar-group">
+        <label className="dp-wrapper">
+          <LocalizationProvider
+            dateAdapter={AdapterDateFns}
+            adapterLocale={enLocale}
+          >
+            <DesktopDatePicker
+              value={jumpDate}
+              onChange={(newValue) => {
+                console.log(newValue);
+                updateJumpDate(newValue)
+                setToday(newValue)
+                setSelectedDateToFetchSlots(newValue)
+              }}
+              minDate={new Date()}
+              renderInput={(params) => <TextField {...params} >Select Date</TextField>}
+              inputFormat="MM/dd/yyyy"
+              showDaysOutsideCurrentMonth
+              renderDay={renderWeekPickerDay}
+              components={{
+                OpenPickerIcon: DateIcon,
+                LeftArrowIcon: LeftArrowButtonBlue,
+                RightArrowIcon: RightArrowButtonBlue,
+                SwitchViewIcon: RightArrowButtonBlue,
+              }}
+            />
+          </LocalizationProvider>
+          <div className="calendar">
+            <Image src={ICONS.calendar} width={25} height={25} />
+          </div>
+        </label>
+      </div>
+    </DateRangeTitleWrapper>
+  )
+}
+
+
+const DateRangeTitleWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  column-gap: 34px;
+  .date-range {
+    display: flex;
+    column-gap: 10px;
+    align-items: center;
+    font-family: 'SF Pro Text';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 10px;
+    color: #000000;
+    .date-range-info {
+      display: flex;
+      column-gap: 5px;
+      .date-unit {
+        width: 85px;
+        text-align: center;
+      }
+    }
+  }
+  .calendar-group {
+    display: flex;
+    column-gap: 10px;
+    .dp-wrapper {
+      position: relative;
+      position: relative;
+      width: 30px;
+      height: 30px;
+      div {
+        padding: 0;
+      }
+      fieldset {
+        border: none;
+        width: 10px;
+        height: 10px;
+        padding: 0;
+      }
+      input {
+        width: 30;
+        overflow: hidden;
+        height: 30px;
+        padding: 0;
+        z-index: 1;
+        opacity: 0;
+      }
+      button {
+        padding: 0;
+        opacity: 0;
+        z-index: 1;
+        transform: translateX(-12px);
+      }
+      .calendar {
+        position: absolute;
+        top: 0;
+        left: 4px;
+        z-index: 0;
+      }
+    }
+  }
+`
